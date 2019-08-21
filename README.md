@@ -1,4 +1,4 @@
-##i3 utility to easily move workspaces
+## i3 utility to easily move workspaces
 
 In i3 whenever you push a window/container
 to a new workspace, it's a real PITA. This 
