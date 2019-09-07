@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"log"
+	"os"
 	"os/exec"
 	"strconv"
 )
@@ -27,6 +28,12 @@ do nothing if
 */
 func main() {
 
+	args := os.Args
+	up := true
+	if args[1] == "down" {
+		up = false
+	}
+
 	wses, err := getWorkspaces()
 	if err != nil {
 		log.Fatal(err.Error())
@@ -37,7 +44,7 @@ func main() {
 		log.Fatal(err.Error())
 	}
 
-	naWS, err := getNextAvailableWorkspace(wses, fWS)
+	naWS, err := getNextAvailableWorkspace(wses, fWS, up)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
@@ -61,7 +68,7 @@ func moveToWorkspace(ws int) {
 	}
 
 	p := make([]byte, 1000)
-	stdout.Read(p)
+	_, _ = stdout.Read(p)
 	log.Printf("%s", p)
 }
 
@@ -129,7 +136,7 @@ func getfocusedWorkspace(wses []Workspace) (Workspace, error) {
 }
 
 // for the workspaces, return the number of the next available
-func getNextAvailableWorkspace(wses []Workspace, focused Workspace) (int, error) {
+func getNextAvailableWorkspace(wses []Workspace, focused Workspace, up bool) (int, error) {
 
 	// these workspaces are taken
 	unavailable := make([]int, 0, 10)
@@ -146,7 +153,6 @@ outer:
 		//is this number available
 		for _, uv := range unavailable {
 			if i == uv {
-				//i is unavailable
 				continue outer
 			}
 		}
@@ -154,7 +160,6 @@ outer:
 			continue
 		}
 
-		// assuming we made it here
 		if i < focused.Num {
 			nextLowestAvailable = i
 		} else if i > focused.Num {
@@ -164,12 +169,23 @@ outer:
 
 	}
 
-	if nextHighestAvailable > -1 {
-		return nextHighestAvailable, nil
+	// they prefer a higher number
+	if up {
+		if nextHighestAvailable > -1 {
+			return nextHighestAvailable, nil
+		}
 	}
+
+	// they prefer a lower number
 	if nextLowestAvailable > -1 {
 		return nextLowestAvailable, nil
 	}
+
+	// they prefer lower but we must go higher
+	if nextHighestAvailable > -1 {
+		return nextHighestAvailable, nil
+	}
+
 	return -1, errors.New("no workspaces available")
 
 }
